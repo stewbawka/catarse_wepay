@@ -1,6 +1,4 @@
 class CatarseWepay::WepayController < ApplicationController
-  include ActiveMerchant::Billing::Integrations
-
   skip_before_filter :force_http
   SCOPE = "projects.contributions.checkout"
   layout :false
@@ -22,7 +20,7 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def ipn
-    if contribution && notification.acknowledge && (contribution.payment_method == 'WePay' || contribution.payment_method.nil?)
+    if contribution && (contribution.payment_method == 'WePay' || contribution.payment_method.nil?)
       process_wepay_message params
       contribution.update_attributes({
         :payment_service_fee => params['mc_fee'],
@@ -115,20 +113,11 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def gateway
-    if PaymentEngines.configuration[:wepay_username] and PaymentEngines.configuration[:wepay_password] and PaymentEngines.configuration[:wepay_signature]
-      @gateway ||= ActiveMerchant::Billing::WepayGateway.new({
-        login: PaymentEngines.configuration[:wepay_username],
-        password: PaymentEngines.configuration[:wepay_password],
-        signature: PaymentEngines.configuration[:wepay_signature]
-      })
+    if PaymentEngines.configuration[:wepay_client_id] and PaymentEngines.configuration[:wepay_client_secret]
+      @gateway ||= WePay.new(PaymentEngines.configuration[:wepay_client_id], PaymentEngines.configuration[:wepay_client_secret])
     else
-      puts "[WePay] An API Certificate or API Signature is required to make requests to WePay"
+      puts "[WePay] An API Client ID and Client Secret are required to make requests to WePay"
     end
   end
 
-  protected
-
-  def notification
-    @notification ||= Paypal::Notification.new(request.raw_post)
-  end
 end

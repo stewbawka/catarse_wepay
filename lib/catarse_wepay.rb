@@ -1,4 +1,4 @@
-require 'active_merchant'
+require 'wepay'
 require "catarse_wepay/engine"
 
 module CatarseWepay

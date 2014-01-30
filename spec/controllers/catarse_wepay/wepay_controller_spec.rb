@@ -254,24 +254,23 @@ describe CatarseWepay::WepayController do
     subject{ controller.gateway }
     context "when we have the wepay configuration" do
       let(:wepay_config) do
-        { wepay_username: 'username', wepay_password: 'pass', wepay_signature: 'signature' }
+        { wepay_client_id: 'client-id', wepay_client_secret: 'client-secret'}
       end
       before do
-        ActiveMerchant::Billing::WepayGateway.should_receive(:new).with({
-          login: PaymentEngines.configuration[:wepay_username],
-          password: PaymentEngines.configuration[:wepay_password],
-          signature: PaymentEngines.configuration[:wepay_signature]
-        }).and_return('gateway instance')
+        WePay.should_receive(:new).with(
+          PaymentEngines.configuration[:wepay_client_id],
+          PaymentEngines.configuration[:wepay_client_secret],
+        ).and_return('gateway instance')
       end
-      xit{ should == 'gateway instance' }
+      it{ should == 'gateway instance' }
     end
 
     context "when we do not have the wepay configuration" do
       let(:wepay_config){ {} }
       before do
-        ActiveMerchant::Billing::WepayGateway.should_not_receive(:new)
+        WePay.should_not_receive(:new)
       end
-      xit{ should be_nil }
+      it{ should be_nil }
     end
   end
 
