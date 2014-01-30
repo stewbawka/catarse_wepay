@@ -1,8 +1,8 @@
-App.addChild('PayPalForm', _.extend({
-  el: '#catarse_paypal_express_form',
+App.addChild('WePayForm', _.extend({
+  el: '#catarse_wepay_form',
 
   events: {
-    'click input[type=submit]': 'onSubmitToPayPal',
+    'click input[type=submit]': 'onSubmitToWePay',
     'keyup #user_document' : 'onUserDocumentKeyup'
   },
 
@@ -12,8 +12,8 @@ App.addChild('PayPalForm', _.extend({
     this.parent.projectId = $('input#project_id').val();
   },
 
-  onSubmitToPayPal: function(e) {
+  onSubmitToWePay: function(e) {
     $(e.currentTarget).hide();
     this.loader.show();
   }
-}, window.PayPal.UserDocument));
+}, window.WePay.UserDocument));

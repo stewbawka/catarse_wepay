@@ -1,4 +1,4 @@
-var PayPal = window.PayPal = { UserDocument: {
+var WePay = window.WePay = { UserDocument: {
   onContentClick: function(e){
     window.setTimeout(function(){
       this.moipForm.checkoutSuccessful({'StatusPagamento': 'Success'});

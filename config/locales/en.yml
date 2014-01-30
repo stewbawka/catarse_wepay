@@ -5,13 +5,13 @@ en:
         success: 'Pedido de reembolso enviado com sucesso!'
         error: 'OPS! Ocorreu um erro ao tentar enviar o pedido de reembolso.'
       review:
-        paypal: 'PayPal'
+        wepay: 'WePay'
         international:
-          section_title: 'You will be directed to the PayPal site to complete payment.'
+          section_title: 'You will be directed to the WePay site to complete payment.'
           user_document_label: 'CPF / CNPJ (only for Brazilians)'
-          button: 'Redirect to PayPal'
+          button: 'Redirect to WePay'
       checkout:
-        paypal_cancel: "Your PayPal payment was canceled. Please try again."
-        paypal_description: "Back project %{project_name} with %{value} (BRL)"
-        paypal_error: "Ooops. There was an error while sending your payment to PayPal. Please try again."
+        wepay_cancel: "Your WePay payment was canceled. Please try again."
+        wepay_description: "Back project %{project_name} with %{value} (BRL)"
+        wepay_error: "Ooops. There was an error while sending your payment to WePay. Please try again."
         success: "Your back was successfully made. Thanks a lot!"

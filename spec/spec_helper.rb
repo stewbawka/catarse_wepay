@@ -29,7 +29,7 @@ RSpec.configure do |config|
   config.infer_base_class_for_anonymous_controllers = false
 
   # Include Engine routes (needed for Controller specs)
-  config.include CatarsePaypalExpress::Engine.routes.url_helpers
+  config.include CatarseWepay::Engine.routes.url_helpers
 
   config.before(:each) do
     PaymentEngines.stub(:configuration).and_return({})
@@ -42,13 +42,13 @@ def fixture_file(filename)
   File.read(file_path)
 end
 
-def paypal_setup_purchase_success_response
+def wepay_setup_purchase_success_response
   { "timestamp"=>"2012-07-23T00:24:21Z", "ack"=>"Success", "correlation_id"=>"dcb8596be51cd", "version"=>"62.0", "build"=>"3332236",
     "token"=>"EC-49X25168KR2556548", "Timestamp"=>"2012-07-23T00:24:21Z", "Ack"=>"Success", "CorrelationID"=>"dcb8596be51cd",
     "Version"=>"62.0", "Build"=>"3332236", "Token"=>"EC-49X25168KR2556548" }
 end
 
-def paypal_details_response
+def wepay_details_response
   {
     "transaction_id" => "1234",
     "checkout_status" => "PaymentActionCompleted",
@@ -56,7 +56,7 @@ def paypal_details_response
   }
 end
 
-def paypal_details_response_refunded
+def wepay_details_response_refunded
   {
     "transaction_id" => "1234",
     "checkout_status" => "PaymentActionCompleted",

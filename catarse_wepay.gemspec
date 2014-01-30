@@ -2,17 +2,17 @@
 $:.push File.expand_path("../lib", __FILE__)
 
 # Maintain your gem's version:
-require "catarse_paypal_express/version"
+require "catarse_wepay/version"
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
-  s.name        = "catarse_paypal_express"
-  s.version     = CatarsePaypalExpress::VERSION
+  s.name        = "catarse_wepay"
+  s.version     = CatarseWepay::VERSION
   s.authors     = ["Antônio Roberto Silva", "Diogo Biazus", "Josemar Davi Luedke"]
   s.email       = ["forevertonny@gmail.com", "diogob@gmail.com", "josemarluedke@gmail.com"]
-  s.homepage    = "http://github.com/catarse/catarse_paypal_express"
-  s.summary     = "PaypalExpress integration with Catarse"
-  s.description = "PaypalExpress integration with Catarse crowdfunding platform"
+  s.homepage    = "http://github.com/catarse/catarse_wepay"
+  s.summary     = "Wepay integration with Catarse"
+  s.description = "Wepay integration with Catarse crowdfunding platform"
 
   s.files      = `git ls-files`.split($\)
   s.test_files = s.files.grep(%r{^(test|spec|features)/})
