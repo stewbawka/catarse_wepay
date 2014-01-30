@@ -1,8 +1,12 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 ENV["RAILS_ENV"] ||= 'test'
+
+raise "You should create file test/dummy/config/database.yml based on test/dummy/config/database.example.yml" unless File.exists?(File.expand_path("../../test/dummy/config/database.yml", __FILE__))
+
 require File.expand_path("../../test/dummy/config/environment", __FILE__)
 require 'rspec/rails'
 require 'rspec/autorun'
+
 
 ENGINE_RAILS_ROOT=File.join(File.dirname(__FILE__), '../')
 
@@ -40,7 +44,7 @@ end
 
 def paypal_setup_purchase_success_response
   { "timestamp"=>"2012-07-23T00:24:21Z", "ack"=>"Success", "correlation_id"=>"dcb8596be51cd", "version"=>"62.0", "build"=>"3332236",
-    "token"=>"EC-49X25168KR2556548", "Timestamp"=>"2012-07-23T00:24:21Z", "Ack"=>"Success", "CorrelationID"=>"dcb8596be51cd", 
+    "token"=>"EC-49X25168KR2556548", "Timestamp"=>"2012-07-23T00:24:21Z", "Ack"=>"Success", "CorrelationID"=>"dcb8596be51cd",
     "Version"=>"62.0", "Build"=>"3332236", "Token"=>"EC-49X25168KR2556548" }
 end
 
