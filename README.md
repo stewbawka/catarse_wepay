@@ -1,12 +1,12 @@
-# CatarsePaypalExpress [![Build Status](https://travis-ci.org/catarse/catarse_paypal_express.png)](https://travis-ci.org/catarse/catarse_paypal_express) 
+# CatarseWePay [![Build Status](https://travis-ci.org/rafaelp/catarse_wepay.png)](https://travis-ci.org/rafaelp/catarse_wepay)
 
-Catarse paypal express integration with [Catarse](http://github.com/danielweinmann/catarse) crowdfunding platform
+Catarse WePay express integration with [Catarse](http://github.com/catarse/catarse) crowdfunding platform
 
 ## Installation
 
 Add this lines to your Catarse application's Gemfile:
 
-    gem 'catarse_paypal_express'
+    gem 'catarse_wepay'
 
 And then execute:
 
@@ -16,32 +16,26 @@ And then execute:
 
 Configure the routes for your Catarse application. Add the following lines in the routes file (config/routes.rb):
 
-    mount CatarsePaypalExpress::Engine => "/", :as => "catarse_paypal_express"
-
-## Rails 3.2.x and Rails 4 support
-
-If you are using the Rails 3.2.x on Catarse's code, you can use the version `1.0.0`.
-
-For Rails 4 support use the `2.0.0` version.
-
+    mount CatarseWepay::Engine => "/", :as => "catarse_wepay"
 
 ### Configurations
 
 Create this configurations into Catarse database:
 
-    paypal_username, paypal_password and paypal_signature
+    wepay_client_id, wepay_client_secret, wepay_access_token and wepay_account_id
 
 In Rails console, run this:
 
-    Configuration.create!(name: "paypal_username", value: "USERNAME")
-    Configuration.create!(name: "paypal_password", value: "PASSWORD")
-    Configuration.create!(name: "paypal_signature", value: "SIGNATURE")
+    Configuration.create!(name: "wepay_client_id", value: "999999")
+    Configuration.create!(name: "wepay_client_secret", value: "xxxxxxxxxx")
+    Configuration.create!(name: "wepay_access_token", value: "STAGE_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    Configuration.create!(name: "wepay_account_id", value: "999999999")
 
 ## Development environment setup
 
 Clone the repository:
 
-    $ git clone git://github.com/devton/catarse_paypal_express.git
+    $ git clone git://github.com/rafaelp/catarse_wepay.git
 
 Add the catarse code into test/dummy:
 
@@ -60,5 +54,10 @@ And then execute:
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
+## Credits
 
-This project rocks and uses MIT-LICENSE.
+CatarseWePay was forked from [catarse_paypal_express](https://github.com/catarse/catarse_paypal_express) and written by [Rafael Lima](http://rafael.adm.br).
+
+## License
+
+CatarseWePay is Copyright © 2014 Rafael Lima. It is free software, and may be redistributed under the terms specified in the [MIT-LICENSE](https://github.com/rafaelp/catarse_wepay/blob/master/MIT-LICENSE) file.
