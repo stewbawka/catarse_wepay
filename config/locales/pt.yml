@@ -7,7 +7,7 @@ pt:
       review:
         wepay: 'Pagamento internacional - WePay'
         international:
-          section_title: 'Você será direcionado para o site do Paypal para completar o pagamento.'
+          section_title: 'Você será direcionado para o site do WePay para completar o pagamento.'
           user_document_label: 'CPF / CNPJ (somente números) opcional'
           button: 'Ir para o wepay'
       checkout:
