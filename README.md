@@ -1,4 +1,4 @@
-# CatarseWePay [![Build Status](https://travis-ci.org/rafaelp/catarse_wepay.png)](https://travis-ci.org/rafaelp/catarse_wepay)
+# CatarseWePay [![Build Status](https://travis-ci.org/rafaelp/catarse_wepay.png?v=1)](https://travis-ci.org/rafaelp/catarse_wepay)
 
 Catarse WePay express integration with [Catarse](http://github.com/catarse/catarse) crowdfunding platform
 
