@@ -73,11 +73,11 @@ describe CatarseWepay::WepayController do
     before do
       success_refund = double
       success_refund.stub(:success?).and_return(true)
-      main_app.should_receive(:admin_backers_path).and_return('admin_backers_path')
+      main_app.should_receive(:admin_contributions_path).and_return('admin_contributions_path')
       gateway.should_receive(:call).with("/checkout/refund", "access-token", {:account_id=>"account-id", :checkout_id=>"508637826", :refund_reason=>"The customer changed his mind"}).and_return({'state' => 'refunded'})
       post :refund, id: contribution.id, use_route: 'catarse_wepay'
     end
-    it { should redirect_to('admin_backers_path') }
+    it { should redirect_to('admin_contributions_path') }
   end
   describe "GET review" do
     before do
@@ -125,7 +125,7 @@ describe CatarseWepay::WepayController do
           redirect_uri: "http://test.host/catarse_wepay/payment/wepay/1/success",
           callback_uri: "http://test.host/catarse_wepay/payment/wepay/ipn"
         }).and_return(checkout_hash.merge('checkout_uri' => nil))
-        main_app.should_receive(:edit_project_backer_path).with(project_id: 1, id: 1).and_return('error url')
+        main_app.should_receive(:edit_project_contribution_path).with(project_id: 1, id: 1).and_return('error url')
         contribution.should_not_receive(:update_attributes)
       end
       it 'should assign flash error' do
@@ -161,7 +161,7 @@ describe CatarseWepay::WepayController do
       let(:set_redirect_expectations) do
         gateway.should_receive(:call).with("/checkout", "access-token", {:checkout_id=>"508637826"}).and_return(checkout_hash.merge('state' => 'authorized'))
         main_app.
-          should_receive(:project_backer_path).
+          should_receive(:project_contribution_path).
           with(project_id: contribution.project.id, id: contribution.id).
           and_return('back url')
       end
@@ -174,7 +174,7 @@ describe CatarseWepay::WepayController do
       let(:set_redirect_expectations) do
         gateway.should_receive(:call).with("/checkout", "access-token", {:checkout_id=>"508637826"}).and_return(checkout_hash.merge('state' => 'failed'))
         main_app.
-          should_receive(:new_project_backer_path).
+          should_receive(:new_project_contribution_path).
           with(contribution.project).
           and_return('new back url')
       end

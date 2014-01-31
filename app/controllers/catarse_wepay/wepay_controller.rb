@@ -19,7 +19,7 @@ class CatarseWepay::WepayController < ApplicationController
       flash[:alert] = refund_request.try(:message) || I18n.t('projects.contributions.refund.error')
     end
 
-    redirect_to main_app.admin_backers_path
+    redirect_to main_app.admin_contributions_path
   end
 
   def ipn
@@ -27,7 +27,7 @@ class CatarseWepay::WepayController < ApplicationController
       response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
           checkout_id: contribution.payment_token,
       })
-      PaymentEngines.create_payment_notification backer_id: contribution.id, extra_data: response
+      PaymentEngines.create_payment_notification contribution_id: contribution.id, extra_data: response
       if response["state"]
         case response["state"].downcase
         when 'captured'
@@ -68,7 +68,7 @@ class CatarseWepay::WepayController < ApplicationController
       redirect_to response['checkout_uri']
     else
       flash[:failure] = t('wepay_error', scope: SCOPE)
-      return redirect_to main_app.edit_project_backer_path(project_id: contribution.project.id, id: contribution.id)
+      return redirect_to main_app.edit_project_contribution_path(project_id: contribution.project.id, id: contribution.id)
     end
   end
 
@@ -82,10 +82,10 @@ class CatarseWepay::WepayController < ApplicationController
     })
     if response['state'] == 'authorized'
       flash[:success] = t('success', scope: SCOPE)
-      redirect_to main_app.project_backer_path(project_id: contribution.project.id, id: contribution.id)
+      redirect_to main_app.project_contribution_path(project_id: contribution.project.id, id: contribution.id)
     else
       flash[:failure] = t('wepay_error', scope: SCOPE)
-      redirect_to main_app.new_project_backer_path(contribution.project)
+      redirect_to main_app.new_project_contribution_path(contribution.project)
     end
   end
 
