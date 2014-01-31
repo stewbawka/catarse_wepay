@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    catarse_wepay (0.0.1)
+    catarse_wepay (0.0.2)
       rails (~> 4.0)
       slim-rails
       wepay (= 0.0.1)
