@@ -4,7 +4,6 @@ rvm:
   - 2.1.0
 
 before_script:
-  - "psql -c 'create role postgres SUPERUSER LOGIN;' postgres"
   - "psql -c 'create database catarse_test;' -U postgres postgres"
 
 script:
