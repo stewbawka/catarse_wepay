@@ -9,7 +9,6 @@ CatarseWepay::Engine.routes.draw do
       get  :review
       post :pay
       get  :success
-      get  :cancel
     end
   end
 end

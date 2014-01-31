@@ -3,7 +3,6 @@ App.addChild('WePayForm', _.extend({
 
   events: {
     'click input[type=submit]': 'onSubmitToWePay',
-    'keyup #user_document' : 'onUserDocumentKeyup'
   },
 
   activate: function() {

@@ -7,24 +7,44 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def refund
-    refund_request = gateway.refund(nil, contribution.payment_id)
+    response = gateway.call('/checkout/refund', PaymentEngines.configuration[:wepay_access_token], {
+        account_id: PaymentEngines.configuration[:wepay_account_id],
+        checkout_id: contribution.payment_token,
+        refund_reason: t('wepay_refund_reason', scope: SCOPE),
+    })
 
-
-    if refund_request.success?
+    if response['state'] == 'refunded'
       flash[:notice] = I18n.t('projects.contributions.refund.success')
     else
       flash[:alert] = refund_request.try(:message) || I18n.t('projects.contributions.refund.error')
     end
 
-    redirect_to main_app.admin_contributions_path
+    redirect_to main_app.admin_backers_path
   end
 
   def ipn
     if contribution && (contribution.payment_method == 'WePay' || contribution.payment_method.nil?)
-      process_wepay_message params
+      response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
+          checkout_id: contribution.payment_token,
+      })
+      PaymentEngines.create_payment_notification backer_id: contribution.id, extra_data: response
+      if response["state"]
+        case response["state"].downcase
+        when 'captured'
+          contribution.confirm!
+        when 'refunded'
+          contribution.refund!
+        when 'cancelled'
+          contribution.cancel!
+        when 'expired', 'failed'
+          contribution.pendent!
+        when 'authorized', 'reserved'
+          contribution.waiting! if contribution.pending?
+        end
+      end
       contribution.update_attributes({
-        :payment_service_fee => params['mc_fee'],
-        :payer_email => params['payer_email']
+        :payment_service_fee => response['fee'],
+        :payer_email => response['payer_email']
       })
     else
       return render status: 500, nothing: true
@@ -35,89 +55,51 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def pay
-    begin
-      response = gateway.setup_purchase(contribution.price_in_cents, {
-        ip: request.remote_ip,
-        return_url: success_wepay_url(id: contribution.id),
-        cancel_return_url: cancel_wepay_url(id: contribution.id),
-        currency_code: 'BRL',
-        description: t('wepay_description', scope: SCOPE, :project_name => contribution.project.name, :value => contribution.display_value),
-        notify_url: ipn_wepay_index_url
-      })
-
-      process_wepay_message response.params
-      contribution.update_attributes payment_method: 'WePay', payment_token: response.token
-
-      redirect_to gateway.redirect_url_for(response.token)
-    rescue Exception => e
-      Rails.logger.info "-----> #{e.inspect}"
+    response = gateway.call('/checkout/create', PaymentEngines.configuration[:wepay_access_token], {
+        account_id: PaymentEngines.configuration[:wepay_account_id],
+        amount: (contribution.price_in_cents/100).round(2).to_s,
+        short_description: t('wepay_description', scope: SCOPE, :project_name => contribution.project.name, :value => contribution.display_value),
+        type: 'DONATION',
+        redirect_uri: success_wepay_url(id: contribution.id),
+        callback_uri: ipn_wepay_index_url(callback_uri_params)
+    })
+    if response['checkout_uri']
+      contribution.update_attributes payment_method: 'WePay', payment_token: response['checkout_id']
+      redirect_to response['checkout_uri']
+    else
       flash[:failure] = t('wepay_error', scope: SCOPE)
-      return redirect_to main_app.new_project_contribution_path(contribution.project)
+      return redirect_to main_app.edit_project_backer_path(project_id: contribution.project.id, id: contribution.id)
     end
+  end
+
+  def callback_uri_params
+    {host: '52966c09.ngrok.com', port: 80} if Rails.env.development?
   end
 
   def success
-    begin
-      purchase = gateway.purchase(contribution.price_in_cents, {
-        ip: request.remote_ip,
-        token: contribution.payment_token,
-        payer_id: params[:PayerID]
-      })
-
-      # we must get the deatils after the purchase in order to get the transaction_id
-      process_wepay_message purchase.params
-      contribution.update_attributes payment_id: purchase.params['transaction_id'] if purchase.params['transaction_id']
-
+    response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
+        checkout_id: contribution.payment_token,
+    })
+    if response['state'] == 'authorized'
       flash[:success] = t('success', scope: SCOPE)
-      redirect_to main_app.project_contribution_path(project_id: contribution.project.id, id: contribution.id)
-    rescue Exception => e
-      Rails.logger.info "-----> #{e.inspect}"
+      redirect_to main_app.project_backer_path(project_id: contribution.project.id, id: contribution.id)
+    else
       flash[:failure] = t('wepay_error', scope: SCOPE)
-      return redirect_to main_app.new_project_contribution_path(contribution.project)
+      redirect_to main_app.new_project_backer_path(contribution.project)
     end
-  end
-
-  def cancel
-    flash[:failure] = t('wepay_cancel', scope: SCOPE)
-    redirect_to main_app.new_project_contribution_path(contribution.project)
   end
 
   def contribution
     @contribution ||= if params['id']
                   PaymentEngines.find_payment(id: params['id'])
-                elsif params['txn_id']
-                  PaymentEngines.find_payment(payment_id: params['txn_id']) || (params['parent_txn_id'] && PaymentEngines.find_payment(payment_id: params['parent_txn_id']))
+                elsif params['checkout_id']
+                  PaymentEngines.find_payment(payment_token: params['checkout_id'])
                 end
   end
 
-  def process_wepay_message(data)
-    extra_data = (data['charset'] ? JSON.parse(data.to_json.force_encoding(data['charset']).encode('utf-8')) : data)
-    PaymentEngines.create_payment_notification contribution_id: contribution.id, extra_data: extra_data
-
-    if data["checkout_status"] == 'PaymentActionCompleted'
-      contribution.confirm!
-    elsif data["payment_status"]
-      case data["payment_status"].downcase
-      when 'completed'
-        contribution.confirm!
-      when 'refunded'
-        contribution.refund!
-      when 'canceled_reversal'
-        contribution.cancel!
-      when 'expired', 'denied'
-        contribution.pendent!
-      else
-        contribution.waiting! if contribution.pending?
-      end
-    end
-  end
-
   def gateway
-    if PaymentEngines.configuration[:wepay_client_id] and PaymentEngines.configuration[:wepay_client_secret]
-      @gateway ||= WePay.new(PaymentEngines.configuration[:wepay_client_id], PaymentEngines.configuration[:wepay_client_secret])
-    else
-      puts "[WePay] An API Client ID and Client Secret are required to make requests to WePay"
-    end
+    raise "[WePay] An API Client ID and Client Secret are required to make requests to WePay" unless PaymentEngines.configuration[:wepay_client_id] and PaymentEngines.configuration[:wepay_client_secret]
+    @gateway ||= WePay.new(PaymentEngines.configuration[:wepay_client_id], PaymentEngines.configuration[:wepay_client_secret])
   end
 
 end

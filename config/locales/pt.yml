@@ -8,10 +8,11 @@ pt:
         wepay: 'Pagamento internacional - WePay'
         international:
           section_title: 'Você será direcionado para o site do WePay para completar o pagamento.'
-          user_document_label: 'CPF / CNPJ (somente números) opcional'
           button: 'Ir para o wepay'
       checkout:
         wepay_cancel: "Seu pagamento no WePay foi cancelado. Por favor, tente novamente."
-        wepay_description: "Apoio para o projeto %{project_name} no valor de %{value}"
+        wepay_description: "Apoio para o projeto %{project_name}"
         wepay_error: "Ooops. Ocorreu um erro ao enviar seu pagamento para o WePay. Por favor, tente novamente."
         success: "Seu apoio foi realizado com sucesso. Muito obrigado!"
+        wepay_refund_reason: "O cliente mudou de ideia"
+

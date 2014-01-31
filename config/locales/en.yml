@@ -8,10 +8,10 @@ en:
         wepay: 'WePay'
         international:
           section_title: 'You will be directed to the WePay site to complete payment.'
-          user_document_label: 'CPF / CNPJ (only for Brazilians)'
           button: 'Redirect to WePay'
       checkout:
         wepay_cancel: "Your WePay payment was canceled. Please try again."
-        wepay_description: "Back project %{project_name} with %{value} (BRL)"
+        wepay_description: "Back project %{project_name}"
         wepay_error: "Ooops. There was an error while sending your payment to WePay. Please try again."
         success: "Your back was successfully made. Thanks a lot!"
+        wepay_refund_reason: "The customer changed his mind"

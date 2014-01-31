@@ -1,17 +1,19 @@
 # encoding: utf-8
-
 require 'spec_helper'
 
 describe CatarseWepay::WepayController do
   SCOPE = CatarseWepay::WepayController::SCOPE
   before do
+    PaymentEngines.configuration.stub(:[]).with(:wepay_client_id).and_return('client-id')
+    PaymentEngines.configuration.stub(:[]).with(:wepay_client_secret).and_return('client-secret')
+    PaymentEngines.configuration.stub(:[]).with(:wepay_access_token).and_return('access-token')
+    PaymentEngines.configuration.stub(:[]).with(:wepay_account_id).and_return('account-id')
     PaymentEngines.stub(:find_payment).and_return(contribution)
     PaymentEngines.stub(:create_payment_notification)
     controller.stub(:main_app).and_return(main_app)
     controller.stub(:current_user).and_return(current_user)
     controller.stub(:gateway).and_return(gateway)
   end
-
   subject{ response }
   let(:gateway){ double('gateway') }
   let(:main_app){ double('main_app') }
@@ -38,187 +40,128 @@ describe CatarseWepay::WepayController do
     address_state: '123',
     address_zip_code: '123',
     address_phone_number: '123',
-    payment_method: 'WePay'
+    payment_method: 'WePay',
+    payment_token: '508637826'
   }) }
-
+  let(:checkout_hash) { {"checkout_id"=>508637826,
+    "account_id"=>21212121,
+    "type"=>"DONATION",
+    "checkout_uri"=>"https://stage.wepay.com/api/checkout/508637826/4e51d293",
+    "short_description"=>"Back project MyProject",
+    "currency"=>"USD",
+    "amount"=>120,
+    "fee_payer"=>"payer",
+    "state"=>"captured",
+    "soft_descriptor"=>"WPY*PluribusFund",
+    "redirect_uri"=>"http://localhost:3000/en/payment/wepay/3/success",
+    "auto_capture"=>true,
+    "app_fee"=>0,
+    "create_time"=>1391132470,
+    "mode"=>"regular",
+    "amount_refunded"=>0,
+    "amount_charged_back"=>0,
+    "gross"=>123.78,
+    "fee"=>3.78,
+    "callback_uri"=>"http://52966c09.ngrok.com/en/payment/wepay/ipn",
+    "tax"=>0,
+    "payer_email"=>"payer@example.com",
+    "payer_name"=>"Payer Name",
+    "dispute_uri"=>
+    "https://stage.wepay.com/dispute/payer_create/633461/6a17d1cff4ec53e29d29"}
+  }
   describe "POST refund" do
     before do
       success_refund = double
       success_refund.stub(:success?).and_return(true)
-
-      main_app.should_receive(:admin_contributions_path).and_return('admin_contributions_path')
-
-      gateway.should_receive(:refund).with(nil, contribution.payment_id).and_return(success_refund)
-
+      main_app.should_receive(:admin_backers_path).and_return('admin_backers_path')
+      gateway.should_receive(:call).with("/checkout/refund", "access-token", {:account_id=>"account-id", :checkout_id=>"508637826", :refund_reason=>"The customer changed his mind"}).and_return({'state' => 'refunded'})
       post :refund, id: contribution.id, use_route: 'catarse_wepay'
     end
-
-    it { should redirect_to('admin_contributions_path') }
+    it { should redirect_to('admin_backers_path') }
   end
-
   describe "GET review" do
     before do
       get :review, id: contribution.id, use_route: 'catarse_wepay'
     end
     it{ should render_template(:review) }
   end
-
   describe "POST ipn" do
-    let(:ipn_data){ {"mc_gross"=>"50.00", "protection_eligibility"=>"Eligible", "address_status"=>"unconfirmed", "payer_id"=>"S7Q8X88KMGX5S", "tax"=>"0.00", "address_street"=>"Rua Tatui, 40 ap 81\r\nJardins", "payment_date"=>"09:03:01 Nov 05, 2012 PST", "payment_status"=>"Completed", "charset"=>"windows-1252", "address_zip"=>"01409-010", "first_name"=>"Paula", "mc_fee"=>"3.30", "address_country_code"=>"BR", "address_name"=>"Paula Rizzo", "notify_version"=>"3.7", "custom"=>"", "payer_status"=>"verified", "address_country"=>"Brazil", "address_city"=>"Sao Paulo", "quantity"=>"1", "verify_sign"=>"ALBe4QrXe2sJhpq1rIN8JxSbK4RZA.Kfc5JlI9Jk4N1VQVTH5hPYOi2S", "payer_email"=>"paula.rizzo@gmail.com", "txn_id"=>"3R811766V4891372K", "payment_type"=>"instant", "last_name"=>"Rizzo", "address_state"=>"SP", "receiver_email"=>"financeiro@catarse.me", "payment_fee"=>"", "receiver_id"=>"BVUB4EVC7YCWL", "txn_type"=>"express_checkout", "item_name"=>"Back project", "mc_currency"=>"BRL", "item_number"=>"", "residence_country"=>"BR", "handling_amount"=>"0.00", "transaction_subject"=>"Back project", "payment_gross"=>"", "shipping"=>"0.00", "ipn_track_id"=>"5865649c8c27"} }
-    let(:contribution){ double(:contribution, :payment_id => ipn_data['txn_id'], :payment_method => 'WePay' ) }
-    let(:notification) { double }
-
-    before do
-      controller.stub(:notification).and_return(notification)
-    end
-
-    context "when payment_method is MoIP" do
-      before do
-        params = ipn_data.merge({ use_route: 'catarse_wepay' })
-
-        notification.stub(:acknowledge).and_return(true)
-        contribution.stub(:payment_method).and_return('MoIP')
-
-        contribution.should_not_receive(:update_attributes)
-        controller.should_not_receive(:process_wepay_message)
-
-        notification.should_receive(:acknowledge)
-
-        post :ipn, params
-      end
-
-      its(:status){ should == 500 }
-      its(:body){ should == ' ' }
-    end
-
     context "when is a valid ipn data" do
+      let(:params) { { use_route: 'catarse_wepay', checkout_id: '1477569800' } }
       before do
-        params = ipn_data.merge({ use_route: 'catarse_wepay' })
-
-        notification.stub(:acknowledge).and_return(true)
-
+        gateway.should_receive(:call).with("/checkout", "access-token", {:checkout_id=>"508637826"}).and_return(checkout_hash)
+        contribution.should_receive(:confirm!)
         contribution.should_receive(:update_attributes).with({
-          payment_service_fee: ipn_data['mc_fee'],
-          payer_email: ipn_data['payer_email']
+          payment_service_fee: 3.78,
+          payer_email: 'payer@example.com'
         })
-        controller.should_receive(:process_wepay_message).with(ipn_data.merge({
-          "controller"=>"catarse_wepay/wepay",
-          "action"=>"ipn"
-        }))
-
-        notification.should_receive(:acknowledge)
-
         post :ipn, params
       end
-
       its(:status){ should == 200 }
       its(:body){ should == ' ' }
     end
-
     context "when is not valid ipn data" do
-      let(:ipn_data){ {"mc_gross"=>"50.00", "payment_status" => 'confirmed', "txn_id" => "3R811766V4891372K", 'payer_email' => 'fake@email.com', 'mc_fee' => '0.0'} }
-
+      let(:params) { { use_route: 'catarse_wepay' } }
       before do
-        params = ipn_data.merge({ use_route: 'catarse_wepay' })
-
-        notification.stub(:acknowledge).and_return(false)
-
-        contribution.should_receive(:update_attributes).with({
-          payment_service_fee: ipn_data['mc_fee'],
-          payer_email: ipn_data['payer_email']
-        }).never
-
-        controller.should_receive(:process_wepay_message).with(ipn_data.merge({
-          "controller"=>"catarse_wepay/wepay",
-          "action"=>"ipn"
-        })).never
-
-        notification.should_receive(:acknowledge)
-
+        contribution.should_not_receive(:update_attributes)
         post :ipn, params
       end
-
       its(:status){ should == 500 }
       its(:body){ should == ' ' }
     end
   end
-
   describe "POST pay" do
     before do
       set_wepay_response
       post :pay, { id: contribution.id, locale: 'en', use_route: 'catarse_wepay' }
     end
-
-
-    context 'when response raises a exception' do
+    context 'when fail' do
       let(:set_wepay_response) do
-        main_app.should_receive(:new_project_contribution_path).with(contribution.project).and_return('error url')
-        gateway.should_receive(:setup_purchase).and_raise(StandardError)
+        gateway.should_receive(:call).with("/checkout/create", "access-token",{
+          account_id: "account-id",
+          amount: "10.0",
+          short_description: "Back project test project",
+          type: 'DONATION',
+          redirect_uri: "http://test.host/catarse_wepay/payment/wepay/1/success",
+          callback_uri: "http://test.host/catarse_wepay/payment/wepay/ipn"
+        }).and_return(checkout_hash.merge('checkout_uri' => nil))
+        main_app.should_receive(:edit_project_backer_path).with(project_id: 1, id: 1).and_return('error url')
+        contribution.should_not_receive(:update_attributes)
       end
       it 'should assign flash error' do
         controller.flash[:failure].should == I18n.t('wepay_error', scope: SCOPE)
       end
       it{ should redirect_to 'error url' }
     end
-
     context 'when successul' do
       let(:set_wepay_response) do
-        success_response = double('success_response', {
-          token: 'ABCD',
-          params: { 'correlation_id' => '123' }
-        })
-        gateway.should_receive(:setup_purchase).with(
-          contribution.price_in_cents,
-          {
-            ip: request.remote_ip,
-            return_url: 'http://test.host/catarse_wepay/payment/wepay/1/success',
-            cancel_return_url: 'http://test.host/catarse_wepay/payment/wepay/1/cancel',
-            currency_code: 'BRL',
-            description: I18n.t('wepay_description', scope: SCOPE, :project_name => contribution.project.name, :value => contribution.display_value),
-            notify_url: 'http://test.host/catarse_wepay/payment/wepay/ipn'
-          }
-        ).and_return(success_response)
+        gateway.should_receive(:call).with("/checkout/create", "access-token",{
+          account_id: "account-id",
+          amount: "10.0",
+          short_description: "Back project test project",
+          type: 'DONATION',
+          redirect_uri: "http://test.host/catarse_wepay/payment/wepay/1/success",
+          callback_uri: "http://test.host/catarse_wepay/payment/wepay/ipn"
+        }).and_return(checkout_hash)
         contribution.should_receive(:update_attributes).with({
           payment_method: "WePay",
-          payment_token: "ABCD"
+          payment_token: 508637826
         })
-        gateway.should_receive(:redirect_url_for).with('ABCD').and_return('success url')
       end
-      it{ should redirect_to 'success url' }
+      it{ should redirect_to 'https://stage.wepay.com/api/checkout/508637826/4e51d293' }
     end
   end
-
-  describe "GET cancel" do
-    before do
-      main_app.should_receive(:new_project_contribution_path).with(contribution.project).and_return('new contribution url')
-      get :cancel, { id: contribution.id, locale: 'en', use_route: 'catarse_wepay' }
-    end
-    it 'should show for user the flash message' do
-      controller.flash[:failure].should == I18n.t('wepay_cancel', scope: SCOPE)
-    end
-    it{ should redirect_to 'new contribution url' }
-  end
-
   describe "GET success" do
-    let(:success_details){ double('success_details', params: {'transaction_id' => '12345', "checkout_status" => "PaymentActionCompleted"}) }
-    let(:params){{ id: contribution.id, PayerID: '123', locale: 'en', use_route: 'catarse_wepay' }}
-
+    let(:params){{ id: contribution.id, use_route: 'catarse_wepay' }}
     before do
-      gateway.should_receive(:purchase).with(contribution.price_in_cents, {
-        ip: request.remote_ip,
-        token: contribution.payment_token,
-        payer_id: params[:PayerID]
-      }).and_return(success_details)
-      controller.should_receive(:process_wepay_message).with(success_details.params)
-      contribution.should_receive(:update_attributes).with(payment_id: '12345')
       set_redirect_expectations
       get :success, params
     end
-
-    context "when purchase is successful" do
+    context "when purchase is authorized" do
       let(:set_redirect_expectations) do
+        gateway.should_receive(:call).with("/checkout", "access-token", {:checkout_id=>"508637826"}).and_return(checkout_hash.merge('state' => 'authorized'))
         main_app.
-          should_receive(:project_contribution_path).
+          should_receive(:project_backer_path).
           with(project_id: contribution.project.id, id: contribution.id).
           and_return('back url')
       end
@@ -227,15 +170,11 @@ describe CatarseWepay::WepayController do
         controller.flash[:success].should == I18n.t('success', scope: SCOPE)
       end
     end
-
-    context 'when wepay purchase raises some error' do
+    context 'when wepay purchase is not authorized' do
       let(:set_redirect_expectations) do
+        gateway.should_receive(:call).with("/checkout", "access-token", {:checkout_id=>"508637826"}).and_return(checkout_hash.merge('state' => 'failed'))
         main_app.
-          should_receive(:project_contribution_path).
-          with(project_id: contribution.project.id, id: contribution.id).
-          and_raise('error')
-        main_app.
-          should_receive(:new_project_contribution_path).
+          should_receive(:new_project_backer_path).
           with(contribution.project).
           and_return('new back url')
       end
@@ -245,7 +184,6 @@ describe CatarseWepay::WepayController do
       it{ should redirect_to 'new back url' }
     end
   end
-
   describe "#gateway" do
     before do
       controller.stub(:gateway).and_call_original
@@ -257,23 +195,18 @@ describe CatarseWepay::WepayController do
         { wepay_client_id: 'client-id', wepay_client_secret: 'client-secret'}
       end
       before do
-        WePay.should_receive(:new).with(
-          PaymentEngines.configuration[:wepay_client_id],
-          PaymentEngines.configuration[:wepay_client_secret],
-        ).and_return('gateway instance')
+        WePay.should_receive(:new).with('client-id', 'client-secret').and_return('gateway instance')
       end
       it{ should == 'gateway instance' }
     end
-
     context "when we do not have the wepay configuration" do
       let(:wepay_config){ {} }
       before do
         WePay.should_not_receive(:new)
       end
-      it{ should be_nil }
+      it { expect { subject }.to raise_exception }
     end
   end
-
   describe "#contribution" do
     subject{ controller.contribution }
     context "when we have an id" do
@@ -283,16 +216,6 @@ describe CatarseWepay::WepayController do
       end
       it{ should == contribution }
     end
-
-    context "when we have an txn_id that does not return contribution but a parent_txn_id that does" do
-      before do
-        controller.stub(:params).and_return({'txn_id' => '1', 'parent_txn_id' => '2'})
-        PaymentEngines.should_receive(:find_payment).with(payment_id: '1').and_return(nil)
-        PaymentEngines.should_receive(:find_payment).with(payment_id: '2').and_return(contribution)
-      end
-      it{ should == contribution }
-    end
-
     context "when we do not have any id" do
       before do
         controller.stub(:params).and_return({})
@@ -300,78 +223,12 @@ describe CatarseWepay::WepayController do
       end
       it{ should be_nil }
     end
-
-    context "when we have an txn_id" do
+    context "when we have an checkout_id" do
       before do
-        controller.stub(:params).and_return({'txn_id' => '1'})
-        PaymentEngines.should_receive(:find_payment).with(payment_id: '1').and_return(contribution)
+        controller.stub(:params).and_return({'checkout_id' => '1'})
+        PaymentEngines.should_receive(:find_payment).with(payment_token: '1').and_return(contribution)
       end
       it{ should == contribution }
-    end
-  end
-
-  describe "#process_wepay_message" do
-    subject{ controller.process_wepay_message data }
-    let(:data){ {'test_data' => true} }
-    before do
-      controller.stub(:params).and_return({'id' => 1})
-      PaymentEngines.should_receive(:create_payment_notification).with(contribution_id: contribution.id, extra_data: data)
-    end
-
-    context "when data['checkout_status'] == 'PaymentActionCompleted'" do
-      let(:data){ {'checkout_status' => 'PaymentActionCompleted'} }
-      before do
-        contribution.should_receive(:confirm!)
-      end
-      it("should call confirm"){ subject }
-    end
-
-    context "some real data with revert op" do
-      let(:data){ { "mc_gross" => "-150.00","protection_eligibility" => "Eligible","payer_id" => "4DK6S6Q75Z5YS","address_street" => "AV. SAO CARLOS, 2205 - conj 501/502 Centro","payment_date" => "09:55:14 Jun 26, 2013 PDT","payment_status" => "Refunded","charset" => "utf-8","address_zip" => "13560-900","first_name" => "Marcius","mc_fee" => "-8.70","address_country_code" => "BR","address_name" => "Marcius Milori","notify_version" => "3.7","reason_code" => "refund","custom" => "","address_country" => "Brazil","address_city" => "São Carlos","verify_sign" => "AbedXpvDaliC7hltYoQrebkEQft7A.y6bRnDvjPIIB1Mct8-aDGcHkcV","payer_email" => "milorimarcius@gmail.com","parent_txn_id" => "78T862320S496750Y","txn_id" => "9RP43514H84299332","payment_type" => "instant","last_name" => "Milori","address_state" => "São Paulo","receiver_email" => "financeiro@catarse.me","payment_fee" => "","receiver_id" => "BVUB4EVC7YCWL","item_name" => "Apoio para o projeto A Caça (La Chasse) no valor de R$ 150","mc_currency" => "BRL","item_number" => "","residence_country" => "BR","handling_amount" => "0.00","transaction_subject" => "Apoio para o projeto A Caça (La Chasse) no valor de R$ 150","payment_gross" => "","shipping" => "0.00","ipn_track_id" => "18c487e6abca4" } }
-      before do
-        contribution.should_receive(:refund!)
-      end
-      it("should call refund"){ subject }
-    end
-
-    context "when it's a refund message" do
-      let(:data){ {'payment_status' => 'refunded'} }
-      before do
-        contribution.should_receive(:refund!)
-      end
-      it("should call refund"){ subject }
-    end
-
-    context "when it's a completed message" do
-      let(:data){ {'payment_status' => 'Completed'} }
-      before do
-        contribution.should_receive(:confirm!)
-      end
-      it("should call confirm"){ subject }
-    end
-
-    context "when it's a cancelation message" do
-      let(:data){ {'payment_status' => 'canceled_reversal'} }
-      before do
-        contribution.should_receive(:cancel!)
-      end
-      it("should call cancel"){ subject }
-    end
-
-    context "when it's a payment expired message" do
-      let(:data){ {'payment_status' => 'expired'} }
-      before do
-        contribution.should_receive(:pendent!)
-      end
-      it("should call pendent"){ subject }
-    end
-
-    context "all other values of payment_status" do
-      let(:data){ {'payment_status' => 'other'} }
-      before do
-        contribution.should_receive(:waiting!)
-      end
-      it("should call waiting"){ subject }
     end
   end
 end
