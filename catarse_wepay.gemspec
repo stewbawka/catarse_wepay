@@ -8,9 +8,9 @@ require "catarse_wepay/version"
 Gem::Specification.new do |s|
   s.name        = "catarse_wepay"
   s.version     = CatarseWepay::VERSION
-  s.authors     = ["Rafael Lima"]
-  s.email       = ["contato@rafael.adm.br"]
-  s.homepage    = "http://github.com/rafaelp/catarse_wepay"
+  s.authors     = ["Stuart Wade"]
+  s.email       = ["stewbawka@gmail.com"]
+  s.homepage    = "http://github.com/stewbawka/catarse_wepay"
   s.summary     = "Wepay integration with Catarse"
   s.description = "Wepay integration with Catarse crowdfunding platform"
 
