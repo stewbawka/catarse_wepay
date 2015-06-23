@@ -58,7 +58,7 @@ class CatarseWepay::WepayController < ApplicationController
     response = gateway.call('/checkout/create', PaymentEngines.configuration[:wepay_access_token], {
         account_id: PaymentEngines.configuration[:wepay_account_id],
         amount: (contribution.price_in_cents/100).round(2).to_s,
-        short_description: t('wepay_description', scope: SCOPE, :project_name => contribution.project.name, :value => contribution.display_value),
+        short_description: t('wepay_description', scope: SCOPE, :project_name => contribution.project.name, :value => number_to_currency(contribution.localized.value)),
         type: 'DONATION',
         redirect_uri: success_wepay_url(id: contribution.id),
         callback_uri: ipn_wepay_index_url(callback_uri_params)
