@@ -90,11 +90,7 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def contribution
-    @contribution ||= if params['id']
-                  PaymentEngines.find_payment(id: params['id'])
-                elsif params['checkout_id']
-                  PaymentEngines.find_payment(payment_token: params['checkout_id'])
-                end
+    @contribution ||= PaymentEngines.find_contribution(params[:id])
   end
 
   def gateway
