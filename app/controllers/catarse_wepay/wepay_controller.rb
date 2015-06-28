@@ -115,7 +115,7 @@ class CatarseWepay::WepayController < ApplicationController
 
   def payment
     attributes = {contribution: contribution, value: contribution.value}
-    @payment ||= PaymentEngines.new_payment(attributes)
+    @payment ||= PaymentEngines.find_payment(contribution_id: contribution.id) || PaymentEngines.new_payment(attributes)
   end
 
   def gateway
