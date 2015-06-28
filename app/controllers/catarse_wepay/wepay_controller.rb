@@ -55,6 +55,10 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def pay
+    payment.update_attributes({
+      gateway: 'Wepay', payment_method: 'Wepay'})
+    payment.save
+
     response = gateway.call('/checkout/create', PaymentEngines.configuration[:wepay_access_token], {
         account_id: PaymentEngines.configuration[:wepay_account_id],
         amount: (contribution.price_in_cents/100).round(2).to_s,
@@ -64,7 +68,7 @@ class CatarseWepay::WepayController < ApplicationController
         callback_uri: ipn_wepay_index_url(callback_uri_params)
     })
     if response['checkout_uri']
-      contribution.update_attributes payment_method: 'WePay', payment_token: response['checkout_id']
+      payment.update_attributes(gateway_data: {token: response['checkout_id']})
       redirect_to response['checkout_uri']
     else
       flash[:failure] = t('wepay_error', scope: SCOPE)
@@ -91,6 +95,11 @@ class CatarseWepay::WepayController < ApplicationController
 
   def contribution
     @contribution ||= PaymentEngines.find_contribution(params[:id])
+  end
+
+  def payment
+    attributes = {contribution: contribution, value: contribution.value}
+    @payment ||= PaymentEngines.new_payment(attributes)
   end
 
   def gateway
