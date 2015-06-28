@@ -82,6 +82,7 @@ class CatarseWepay::WepayController < ApplicationController
 
   def success
     success = false
+    response = nil
     if gateway_data = payment.gateway_data
       if token = gateway_data["token"]
         response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
@@ -89,9 +90,12 @@ class CatarseWepay::WepayController < ApplicationController
         })
         if response['state'] == 'authorized'
           success = true
+          binding.pry
         end
       end
     end
+
+    change_payment_state(payment, response)
 
     if success
       flash[:success] = t('success', scope: SCOPE)
@@ -116,4 +120,18 @@ class CatarseWepay::WepayController < ApplicationController
     @gateway ||= WePay.new(PaymentEngines.configuration[:wepay_client_id], PaymentEngines.configuration[:wepay_client_secret])
   end
 
+  def change_payment_state(payment, response)
+    binding.pry
+    #there is a concern in the catarse_pagarme gem that will update the payment further with info for 
+    #'acquirer data', card brand, installment value,  gateawy fee...
+    #delegator.update_transaction  
+    self.payment.payment_notifications.create(contribution_id: self.payment.contribution_id)
+  end
+
+  def attributes_to_payment
+    {
+      payment_method: 'Wepay',
+      gateway_id: 
+    }
+  end
 end
