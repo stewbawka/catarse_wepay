@@ -1,3 +1,3 @@
 module CatarseWepay
-  VERSION = "0.0.39"
+  VERSION = "0.0.4"
 end

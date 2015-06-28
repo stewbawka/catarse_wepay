@@ -131,7 +131,7 @@ class CatarseWepay::WepayController < ApplicationController
   def attributes_to_payment
     {
       payment_method: 'Wepay',
-      gateway_id: 
+      gateway_id: nil
     }
   end
 end
