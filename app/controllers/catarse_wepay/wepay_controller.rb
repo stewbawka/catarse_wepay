@@ -82,7 +82,7 @@ class CatarseWepay::WepayController < ApplicationController
 
   def success
     success = false
-    if gateway_data = payment.payment_data
+    if gateway_data = payment.gateway_data
       if token = gateway_data["token"]
         response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
             checkout_id: token,
