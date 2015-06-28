@@ -67,6 +67,7 @@ class CatarseWepay::WepayController < ApplicationController
         redirect_uri: success_wepay_url(id: contribution.id),
         callback_uri: ipn_wepay_index_url(callback_uri_params)
     })
+    binding.pry
     if response['checkout_uri']
       payment.update_attributes(gateway_data: {token: response['checkout_id']})
       redirect_to response['checkout_uri']
@@ -82,9 +83,11 @@ class CatarseWepay::WepayController < ApplicationController
 
   def success
     success = false
+    binding.pry
     response = nil
     if gateway_data = payment.gateway_data
       if token = gateway_data["token"]
+        binding.pry
         response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
             checkout_id: token,
         })
