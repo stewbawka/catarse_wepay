@@ -81,10 +81,19 @@ class CatarseWepay::WepayController < ApplicationController
   end
 
   def success
-    response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
-        checkout_id: contribution.payment_token,
-    })
-    if response['state'] == 'authorized'
+    success = false
+    if payment_data = payment.payment_data
+      if token = payment_data["token"]
+        response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
+            checkout_id: token,
+        })
+        if response['state'] == 'authorized'
+          success = true
+        end
+      end
+    end
+
+    if success
       flash[:success] = t('success', scope: SCOPE)
       redirect_to main_app.project_contribution_path(project_id: contribution.project.id, id: contribution.id)
     else
