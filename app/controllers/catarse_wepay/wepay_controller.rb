@@ -93,7 +93,13 @@ class CatarseWepay::WepayController < ApplicationController
         })
         if response['state'] == 'authorized'
           success = true
-          binding.pry
+        elsif response['state'] == 'captured'
+          success = true
+          contribution.confirm!
+          contribution.update_attributes({
+            :payment_service_fee => response['fee'],
+            :payer_email => response['payer_email']
+          })
         end
       end
     end
