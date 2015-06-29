@@ -67,7 +67,6 @@ class CatarseWepay::WepayController < ApplicationController
         redirect_uri: success_wepay_url(id: contribution.id),
         callback_uri: ipn_wepay_index_url(callback_uri_params)
     })
-    binding.pry
     if response['checkout_uri']
       payment.update_attributes(gateway_data: {token: response['checkout_id']})
       redirect_to response['checkout_uri']
@@ -83,11 +82,9 @@ class CatarseWepay::WepayController < ApplicationController
 
   def success
     success = false
-    binding.pry
     response = nil
     if gateway_data = payment.gateway_data
       if token = gateway_data["token"]
-        binding.pry
         response = gateway.call('/checkout', PaymentEngines.configuration[:wepay_access_token], {
             checkout_id: token,
         })
@@ -95,7 +92,7 @@ class CatarseWepay::WepayController < ApplicationController
           success = true
         elsif response['state'] == 'captured'
           success = true
-          contribution.confirm!
+          payment.pay
           contribution.update_attributes({
             :payment_service_fee => response['fee'],
             :payer_email => response['payer_email']
@@ -129,18 +126,4 @@ class CatarseWepay::WepayController < ApplicationController
     @gateway ||= WePay.new(PaymentEngines.configuration[:wepay_client_id], PaymentEngines.configuration[:wepay_client_secret])
   end
 
-  def change_payment_state(payment, response)
-    binding.pry
-    #there is a concern in the catarse_pagarme gem that will update the payment further with info for 
-    #'acquirer data', card brand, installment value,  gateawy fee...
-    #delegator.update_transaction  
-    self.payment.payment_notifications.create(contribution_id: self.payment.contribution_id)
-  end
-
-  def attributes_to_payment
-    {
-      payment_method: 'Wepay',
-      gateway_id: nil
-    }
-  end
 end
