@@ -101,8 +101,6 @@ class CatarseWepay::WepayController < ApplicationController
       end
     end
 
-    change_payment_state(payment, response)
-
     if success
       flash[:success] = t('success', scope: SCOPE)
       redirect_to main_app.project_contribution_path(project_id: contribution.project.id, id: contribution.id)
